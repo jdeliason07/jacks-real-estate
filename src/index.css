@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Paint the app's base color behind everything so overscroll (rubber-band),
+   safe-area insets (notch / home indicator), and mobile toolbar gaps never
+   flash the browser's default white. */
+html {
+  background-color: #020617;
+  color-scheme: dark;
+}
+body,
+#root {
+  min-height: 100dvh;
+  background-color: #020617;
+}

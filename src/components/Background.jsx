@@ -9,7 +9,7 @@ function Ring({ style }) {
 export default function Background({ children }) {
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-dvh relative overflow-hidden"
       style={{ ...bodyFont, background: "linear-gradient(160deg, #020617 0%, #042f2e 50%, #1e1b4b 100%)" }}
     >
       <Ring style={{ bottom: "-160px", right: "-160px", width: "220px", height: "220px", border: "1px solid rgba(45,212,191,0.25)" }} />
