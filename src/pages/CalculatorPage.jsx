@@ -1,11 +1,11 @@
 import Background from "../components/Background.jsx";
-import Nav from "../components/Nav.jsx";
+import Menu from "../components/Menu.jsx";
 import DealCalculator from "../components/calculator/DealCalculator.jsx";
 
 export default function CalculatorPage() {
   return (
     <Background>
-      <Nav />
+      <Menu />
       <DealCalculator />
     </Background>
   );
