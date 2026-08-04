@@ -33,7 +33,14 @@ export default function Menu() {
   }, [open]);
 
   return (
-    <div ref={ref} className="fixed top-4 right-4 z-30">
+    <div
+      ref={ref}
+      className="fixed z-30"
+      style={{
+        top: "calc(env(safe-area-inset-top, 0px) + 1.5rem)",
+        right: "calc(env(safe-area-inset-right, 0px) + 1.5rem)",
+      }}
+    >
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Menu"
