@@ -1,47 +1,82 @@
-# Jack's Real Estate — Deal Calculator
+# Jack's Realty
 
-A field underwriting worksheet for real estate wholesalers. Enter comps, estimate
-rehab, apply the 70% rule, and get a target contract price. Runs entirely in the
-browser — no backend, no data leaves the device.
+Real estate investing, run by the numbers. This is the site for Jack's Realty —
+currently a simple landing page plus the **Deal Calculator**, a field
+underwriting worksheet. It's built as a multi-page single-page app so more
+pages (deals, portfolio, contact) can be added later without re-architecting.
 
-**Flow:** ARV → Rehab → 70% Rule → Target Price
+Everything runs in the browser — no backend, and no deal data leaves the device
+(inputs are saved to `localStorage` so a deal survives a refresh).
+
+## Pages / routes
+
+| Route          | Page                                                        |
+| -------------- | ----------------------------------------------------------- |
+| `/`            | Landing page (brand + link into the tools)                  |
+| `/calculator`  | Deal Calculator — ARV → Rehab → 70% rule → target price     |
+
+Add new pages in `src/pages/` and register them in `src/App.jsx`.
+
+## Project layout
+
+```
+src/
+  App.jsx                     route table
+  main.jsx                    entry point + self-hosted font imports
+  index.css                   Tailwind directives
+  lib/
+    deal.js                   pure deal math (computeDeal) + formatting  ← unit-tested
+    deal.test.js              vitest tests for the math
+    fonts.js                  shared font style objects
+    ui.js                     shared input styling
+  components/
+    Background.jsx            shared gradient + rings page shell
+    Nav.jsx                   brand top bar
+    calculator/
+      DealCalculator.jsx      state, persistence, composes the sections
+      CompsSection.jsx        comps → ARV
+      RehabSection.jsx        rehab estimate
+      TermsSection.jsx        rule %, fee, listing price
+      LedgerSection.jsx       ledger, target price, copy-summary
+  pages/
+    Landing.jsx
+    CalculatorPage.jsx
+```
 
 ## Tech stack
 
-- [React 18](https://react.dev/)
+- [React 18](https://react.dev/) + [react-router-dom 6](https://reactrouter.com/)
 - [Vite 5](https://vitejs.dev/) (dev server + build)
 - [Tailwind CSS 3](https://tailwindcss.com/)
 - [lucide-react](https://lucide.dev/) icons
+- Fonts (Permanent Marker, Kalam) self-hosted via [@fontsource](https://fontsource.org/)
+  — bundled at build time, so the site works fully offline with no external requests.
+- [Vitest](https://vitest.dev/) for the deal-math tests
 
-## Run locally
+## Develop
 
 ```bash
 npm install
-npm run dev
+npm run dev        # Vite dev server (default http://localhost:5173)
+npm test           # run the deal-math unit tests
 ```
-
-Vite prints a local URL (default http://localhost:5173).
 
 ## Build for production
 
 ```bash
-npm run build      # outputs static files to dist/
+npm run build      # outputs a static site to dist/
 npm run preview    # serve the built dist/ locally to verify
 ```
 
-The `dist/` folder is a fully static site — host it on any static host.
-
 ## Deploy
 
-This is a static single-page app, so any static host works.
+`dist/` is a fully static SPA — host it anywhere.
 
-- **Netlify** — connect the repo; `netlify.toml` already sets build command
-  (`npm run build`) and publish dir (`dist`). Or drag-and-drop the `dist/` folder.
+- **Netlify** — connect the repo; `netlify.toml` sets the build command
+  (`npm run build`), publish dir (`dist`), and the SPA fallback so deep links
+  like `/calculator` resolve.
 - **Vercel** — import the repo; `vercel.json` sets the framework, build command,
-  and output dir. Vercel auto-detects Vite as well.
+  output dir, and SPA rewrites.
 - **GitHub Pages / Cloudflare Pages / S3 / any static host** — run
-  `npm run build` and upload the contents of `dist/`.
-
-> Note: the display fonts (Permanent Marker, Kalam) load from Google Fonts at
-> runtime, so the deployed site needs outbound network access to fonts.googleapis.com.
-> If a font can't load, the browser falls back to a system cursive/sans font.
+  `npm run build`, upload `dist/`, and make sure unknown paths fall back to
+  `index.html` (required for client-side routing).
