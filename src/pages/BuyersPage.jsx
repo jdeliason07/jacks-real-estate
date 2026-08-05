@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { UserPlus, Search, Users } from "lucide-react";
 import Background from "../components/Background.jsx";
-import Menu from "../components/Menu.jsx";
+import SwipeUpMenu from "../components/SwipeUpMenu.jsx";
 import BuyerForm from "../components/buyers/BuyerForm.jsx";
 import BuyerCard from "../components/buyers/BuyerCard.jsx";
 import {
@@ -64,7 +64,7 @@ export default function BuyersPage() {
   if (mode === "form") {
     return (
       <Background>
-        <Menu />
+        <SwipeUpMenu />
         <BuyerForm
           initial={editing}
           onSave={handleSave}
@@ -76,7 +76,7 @@ export default function BuyersPage() {
 
   return (
     <Background>
-      <Menu />
+      <SwipeUpMenu />
       <div className="max-w-2xl mx-auto px-4 py-10">
         <div className="mb-8 text-center">
           <p className="text-teal-400 text-sm mb-2" style={displayFont}>CASH BUYERS LIST</p>

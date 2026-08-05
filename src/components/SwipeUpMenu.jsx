@@ -1,45 +1,67 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Calculator, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Calculator, Users, Home } from "lucide-react";
 import { displayFont } from "../lib/fonts.js";
 
-// Destinations shown in the landing sheet. Add to this list as pages ship.
+// Destinations. "Home" is dropped on the landing page itself.
 const LINKS = [
+  { label: "Home", to: "/", icon: Home },
   { label: "Deal Calculator", to: "/calculator", icon: Calculator },
   { label: "Buyers", to: "/buyers", icon: Users },
 ];
 
-const SWIPE_THRESHOLD = 45; // px of upward travel that counts as a swipe
+const SWIPE_THRESHOLD = 45; // px of travel that counts as a swipe
+const BOTTOM_SLOP = 6; // px of tolerance when deciding "at the bottom"
+
+// True when the page can scroll no further down. Short pages (the landing
+// page) are always at the bottom, so the gesture works there immediately.
+function atPageBottom() {
+  const doc = document.documentElement;
+  return window.innerHeight + window.scrollY >= doc.scrollHeight - BOTTOM_SLOP;
+}
 
 /**
- * Landing-page navigation: hidden until the user swipes up (or taps the hint,
- * scrolls, or presses Up/Enter), then a sheet slides in from the bottom.
- * Swiping back down, tapping the backdrop, or Escape dismisses it.
+ * Site navigation revealed by swiping up. The gesture only opens the menu when
+ * it *starts* with the page already scrolled to the bottom, so ordinary
+ * mid-page swipes scroll as normal and never trip the menu. Swiping back down,
+ * tapping the backdrop or handle, or pressing Escape dismisses it.
  */
 export default function SwipeUpMenu() {
   const [open, setOpen] = useState(false);
-  const startY = useRef(null);
+  const { pathname } = useLocation();
 
-  // Whole-page gestures: swipe up to open, swipe down to close.
+  const links = pathname === "/" ? LINKS.filter((l) => l.to !== "/") : LINKS;
+
   useEffect(() => {
+    let startY = null;
+    let startedAtBottom = false;
+
     function onTouchStart(e) {
-      startY.current = e.touches[0].clientY;
+      startY = e.touches[0].clientY;
+      // Decide up front: if the gesture began mid-page, it's a scroll, even if
+      // it happens to reach the bottom before the finger lifts.
+      startedAtBottom = atPageBottom();
     }
     function onTouchEnd(e) {
-      if (startY.current == null) return;
-      const delta = e.changedTouches[0].clientY - startY.current;
-      if (delta < -SWIPE_THRESHOLD) setOpen(true);
-      else if (delta > SWIPE_THRESHOLD) setOpen(false);
-      startY.current = null;
+      if (startY == null) return;
+      const delta = e.changedTouches[0].clientY - startY;
+      if (open) {
+        if (delta > SWIPE_THRESHOLD) setOpen(false);
+      } else if (startedAtBottom && delta < -SWIPE_THRESHOLD) {
+        setOpen(true);
+      }
+      startY = null;
     }
-    // Desktop equivalents so the page isn't touch-only.
+    // Desktop equivalent: keep scrolling past the bottom to open.
     function onWheel(e) {
-      if (e.deltaY > 12) setOpen(true);
-      else if (e.deltaY < -12) setOpen(false);
+      if (open) {
+        if (e.deltaY < -12) setOpen(false);
+      } else if (e.deltaY > 12 && atPageBottom()) {
+        setOpen(true);
+      }
     }
     function onKey(e) {
-      if (e.key === "Escape" || e.key === "ArrowDown") setOpen(false);
-      else if (e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") setOpen(true);
+      if (e.key === "Escape") setOpen(false);
     }
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -52,7 +74,22 @@ export default function SwipeUpMenu() {
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
     };
-  }, []);
+  }, [open]);
+
+  // Don't let the page scroll behind the open sheet.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // Close on navigation so the sheet isn't still up on the next page.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <>
@@ -73,7 +110,7 @@ export default function SwipeUpMenu() {
         }
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
       >
-        {/* Grab handle — drag it down to dismiss */}
+        {/* Grab handle — tap or swipe down to dismiss */}
         <button
           onClick={() => setOpen(false)}
           aria-label="Close menu"
@@ -83,7 +120,7 @@ export default function SwipeUpMenu() {
         </button>
 
         <div className="max-w-md mx-auto px-5 pt-2">
-          {LINKS.map(({ label, to, icon: Icon }) => (
+          {links.map(({ label, to, icon: Icon }) => (
             <Link
               key={to}
               to={to}
