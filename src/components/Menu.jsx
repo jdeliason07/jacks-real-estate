@@ -7,6 +7,7 @@ import { bodyFont, bodyFontLight } from "../lib/fonts.js";
 const LINKS = [
   { label: "Home", to: "/" },
   { label: "Deal Calculator", to: "/calculator" },
+  { label: "Buyers", to: "/buyers" },
   { label: "Properties", soon: true },
   { label: "About", soon: true },
 ];
