@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronUp, Calculator, Users } from "lucide-react";
-import { bodyFontLight, displayFont } from "../lib/fonts.js";
+import { Calculator, Users } from "lucide-react";
+import { displayFont } from "../lib/fonts.js";
 
 // Destinations shown in the landing sheet. Add to this list as pages ship.
 const LINKS = [
@@ -56,21 +56,6 @@ export default function SwipeUpMenu() {
 
   return (
     <>
-      {/* Hint — also a tap target, so the menu is reachable without gestures */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Open menu"
-        aria-expanded={open}
-        className={
-          "fixed left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-teal-400/80 hover:text-teal-300 transition-opacity duration-300 " +
-          (open ? "opacity-0 pointer-events-none" : "opacity-100")
-        }
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)" }}
-      >
-        <ChevronUp className="w-7 h-7 swipe-hint" strokeWidth={2.5} />
-        <span className="text-base" style={bodyFontLight}>swipe up</span>
-      </button>
-
       {/* Backdrop */}
       <div
         onClick={() => setOpen(false)}
