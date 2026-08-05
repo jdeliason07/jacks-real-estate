@@ -10,8 +10,8 @@ export default function Landing() {
       <Menu />
       <div className="min-h-dvh flex items-center justify-center text-center px-4">
         <h1
-          className="text-6xl sm:text-8xl text-teal-400 font-bold leading-[0.95]"
-          style={{ ...displayFont, textShadow: "5px 5px 0 rgba(124,58,237,0.55)" }}
+          className="electric text-6xl sm:text-8xl font-bold leading-[0.95]"
+          style={displayFont}
         >
           <span className="block">Jack&apos;s</span>
           <span className="block">Realty</span>
