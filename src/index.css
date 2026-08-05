@@ -15,9 +15,14 @@ body,
   background-color: #020617;
 }
 
-/* "Electric" neon wordmark: a constant teal/violet glow that buzzes and
-   flickers like a live neon sign. The 4px offset keeps the hand-drawn depth
-   shadow; the blurred layers are the glow that the animation modulates. */
+/* "Electric" neon wordmark. Two phases:
+   1) neon-on  — plays once on load: the sign struggles to light, flickering
+      fully on/off a few times before catching.
+   2) neon-buzz — infinite: stays lit and buzzes with lots of rapid flicker,
+      but never fully turns off.
+   The 4px offset keeps the hand-drawn depth shadow; the blurred layers are the
+   glow the animation modulates. neon-buzz is delayed by neon-on's duration so
+   the two never fight over the same properties. */
 .electric {
   color: #ccfbf1;
   text-shadow:
@@ -26,11 +31,68 @@ body,
     0 0 18px rgba(45, 212, 191, 0.75),
     0 0 34px rgba(20, 184, 166, 0.6),
     0 0 60px rgba(124, 58, 237, 0.55);
-  animation: electric-flicker 4.5s infinite;
+  animation:
+    neon-on 2.2s linear both,
+    neon-buzz 2s 2.2s infinite;
 }
 
-@keyframes electric-flicker {
-  0%,
+/* Power-on struggle — full dropouts, only at the start. */
+@keyframes neon-on {
+  0% {
+    opacity: 0;
+    text-shadow: 4px 4px 0 rgba(124, 58, 237, 0.35);
+  }
+  4% {
+    opacity: 0.7;
+    text-shadow:
+      4px 4px 0 rgba(124, 58, 237, 0.55),
+      0 0 10px rgba(224, 255, 250, 0.9);
+  }
+  5%,
+  9% {
+    opacity: 0;
+    text-shadow: 4px 4px 0 rgba(124, 58, 237, 0.35);
+  }
+  11% {
+    opacity: 1;
+    text-shadow:
+      4px 4px 0 rgba(124, 58, 237, 0.55),
+      0 0 12px rgba(224, 255, 250, 1),
+      0 0 28px rgba(45, 212, 191, 0.9);
+  }
+  13%,
+  17% {
+    opacity: 0;
+    text-shadow: 4px 4px 0 rgba(124, 58, 237, 0.35);
+  }
+  20% {
+    opacity: 1;
+  }
+  24% {
+    opacity: 0.1;
+    text-shadow: 4px 4px 0 rgba(124, 58, 237, 0.4);
+  }
+  28% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0.3;
+    text-shadow:
+      4px 4px 0 rgba(124, 58, 237, 0.55),
+      0 0 5px rgba(45, 212, 191, 0.5);
+  }
+  36% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.5;
+    text-shadow:
+      4px 4px 0 rgba(124, 58, 237, 0.55),
+      0 0 6px rgba(45, 212, 191, 0.6);
+  }
+  48% {
+    opacity: 1;
+  }
   100% {
     opacity: 1;
     text-shadow:
@@ -40,43 +102,61 @@ body,
       0 0 34px rgba(20, 184, 166, 0.6),
       0 0 60px rgba(124, 58, 237, 0.55);
   }
-  /* fast buzz — glow swells brighter */
-  47% {
+}
+
+/* Steady state — always brightly lit. Opacity only jitters between ~0.9 and
+   1, the full glow is kept at every frame, and bright white-core pops fire
+   often. Lots of flicker, but it never goes dark. */
+@keyframes neon-buzz {
+  0%,
+  10%,
+  22%,
+  34%,
+  48%,
+  66%,
+  78%,
+  92%,
+  100% {
     opacity: 1;
     text-shadow:
       4px 4px 0 rgba(124, 58, 237, 0.55),
-      0 0 10px rgba(45, 212, 191, 1),
-      0 0 26px rgba(45, 212, 191, 0.9),
-      0 0 52px rgba(20, 184, 166, 0.75),
-      0 0 90px rgba(124, 58, 237, 0.7);
+      0 0 7px rgba(45, 212, 191, 0.9),
+      0 0 18px rgba(45, 212, 191, 0.75),
+      0 0 34px rgba(20, 184, 166, 0.6),
+      0 0 60px rgba(124, 58, 237, 0.55);
   }
-  /* brief dropouts — the "flicker" */
-  9%,
-  9.6%,
-  62%,
-  62.5% {
-    opacity: 0.45;
+  /* quick brightness dips — still fully lit and glowing */
+  7%,
+  19%,
+  31%,
+  52%,
+  70%,
+  88% {
+    opacity: 0.9;
     text-shadow:
       4px 4px 0 rgba(124, 58, 237, 0.55),
-      0 0 4px rgba(45, 212, 191, 0.4);
+      0 0 6px rgba(45, 212, 191, 0.8),
+      0 0 16px rgba(45, 212, 191, 0.65),
+      0 0 30px rgba(20, 184, 166, 0.5),
+      0 0 52px rgba(124, 58, 237, 0.5);
   }
-  9.3%,
-  62.3% {
+  /* bright white-core electric pops */
+  4%,
+  27%,
+  44%,
+  60%,
+  82% {
     opacity: 1;
     text-shadow:
       4px 4px 0 rgba(124, 58, 237, 0.55),
-      0 0 12px rgba(224, 255, 250, 1),
-      0 0 28px rgba(45, 212, 191, 0.95),
-      0 0 55px rgba(124, 58, 237, 0.7);
-  }
-  80% {
-    opacity: 0.7;
-    text-shadow:
-      4px 4px 0 rgba(124, 58, 237, 0.55),
-      0 0 6px rgba(45, 212, 191, 0.6);
+      0 0 11px rgba(224, 255, 250, 1),
+      0 0 26px rgba(45, 212, 191, 0.95),
+      0 0 55px rgba(45, 212, 191, 0.7),
+      0 0 95px rgba(124, 58, 237, 0.7);
   }
 }
 
+/* Users who prefer reduced motion get a steady glow, no flicker. */
 @media (prefers-reduced-motion: reduce) {
   .electric {
     animation: none;
