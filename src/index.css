@@ -157,7 +157,7 @@ body,
 }
 
 /* Subtle light wave that drifts down the screen roughly every 12s. The pass
-   itself takes ~4s; the rest of the cycle it waits off-screen. Sits behind
+   itself takes ~8s; the rest of the cycle it waits off-screen. Sits behind
    all content and never intercepts taps. */
 .wave-sweep {
   position: fixed;
@@ -185,13 +185,13 @@ body,
     transform: translateY(-50vh);
     opacity: 0;
   }
-  4% {
+  8% {
     opacity: 1;
   }
-  28% {
+  56% {
     opacity: 1;
   }
-  34% {
+  68% {
     transform: translateY(120vh);
     opacity: 0;
   }
