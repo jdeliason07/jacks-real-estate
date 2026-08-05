@@ -5,6 +5,8 @@ import CompsSection from "./CompsSection.jsx";
 import RehabSection from "./RehabSection.jsx";
 import TermsSection from "./TermsSection.jsx";
 import LedgerSection from "./LedgerSection.jsx";
+import MatchingBuyers from "./MatchingBuyers.jsx";
+import useDocumentTitle from "../../lib/useDocumentTitle.js";
 
 const STORAGE_KEY = "jacks-realty-deal-v1";
 
@@ -41,6 +43,7 @@ function loadInitialState() {
 
 export default function DealCalculator() {
   const [state, setState] = useState(loadInitialState);
+  useDocumentTitle("Deal Calculator");
 
   // Persist every change so a field deal survives a refresh.
   useEffect(() => {
@@ -87,6 +90,7 @@ export default function DealCalculator() {
       <RehabSection state={state} deal={deal} set={set} selectTier={selectTier} />
       <TermsSection state={state} set={set} />
       <LedgerSection state={state} deal={deal} />
+      <MatchingBuyers deal={deal} />
 
       <p className="text-blue-400 text-base text-center" style={bodyFontLight}>
         Rule-of-thumb estimates only - confirm with your buyer's numbers and the listing agent before contract.

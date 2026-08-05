@@ -14,3 +14,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <App />
   </React.StrictMode>
 );
+
+// Offline support for the installed app. Dev keeps the network so hot reload
+// and fresh builds are never served from a stale cache.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* offline support is a bonus, not a requirement */
+    });
+  });
+}

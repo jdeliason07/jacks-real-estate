@@ -1,7 +1,8 @@
 import { Hammer, AlertTriangle } from "lucide-react";
 import { fmt, REHAB_TIERS } from "../../lib/deal.js";
 import { bodyFont, bodyFontLight, displayFont } from "../../lib/fonts.js";
-import { inputClass } from "../../lib/ui.js";
+import { inputClass, numericProps } from "../../lib/ui.js";
+import Field from "../Field.jsx";
 
 export default function RehabSection({ state, deal, set, selectTier }) {
   const { sqft, tier, perSqft, rehabOverride, rehabManual } = state;
@@ -15,10 +16,7 @@ export default function RehabSection({ state, deal, set, selectTier }) {
       </div>
       <p className="text-blue-300 text-lg mb-4" style={bodyFontLight}>Rule-of-thumb rehab benchmark, based on photos and listing notes.</p>
 
-      <div className="mb-4">
-        <label className="text-lg text-blue-300 block mb-1" style={bodyFontLight}>Square footage</label>
-        <input type="number" value={sqft} onChange={(e) => set({ sqft: e.target.value })} className={inputClass} style={bodyFont} />
-      </div>
+      <Field label="Square footage" numeric value={sqft} onChange={(v) => set({ sqft: v })} />
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         {Object.entries(REHAB_TIERS).map(([key, t]) => (
@@ -35,8 +33,8 @@ export default function RehabSection({ state, deal, set, selectTier }) {
       <p className="text-blue-400 text-lg mb-4" style={bodyFontLight}>{REHAB_TIERS[tier].desc}</p>
 
       <div className="flex items-center gap-2 mb-4">
-        <label className="text-lg text-blue-300 whitespace-nowrap" style={bodyFontLight}>$ / sqft</label>
-        <input type="number" value={perSqft} onChange={(e) => set({ perSqft: e.target.value })} className="w-28 bg-blue-950 border-2 border-blue-800 rounded-lg px-3 py-2 text-blue-50 text-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" style={bodyFont} />
+        <label htmlFor="rehab-per-sqft" className="text-lg text-blue-300 whitespace-nowrap" style={bodyFontLight}>$ / sqft</label>
+        <input id="rehab-per-sqft" type="number" {...numericProps} value={perSqft} onChange={(e) => set({ perSqft: e.target.value })} className="w-28 bg-blue-950 border-2 border-blue-800 rounded-lg px-3 py-2 text-blue-50 text-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" style={bodyFont} />
       </div>
 
       <div className="pt-4 border-t border-blue-800">
@@ -50,7 +48,7 @@ export default function RehabSection({ state, deal, set, selectTier }) {
         <>
           <div className="mt-2 flex items-center gap-2">
             <span className="text-blue-400 text-xl">$</span>
-            <input type="number" value={rehabManual} onChange={(e) => set({ rehabManual: e.target.value })} placeholder="Manual rehab total" className={inputClass} style={bodyFont} />
+            <input type="number" {...numericProps} value={rehabManual} onChange={(e) => set({ rehabManual: e.target.value })} placeholder="Manual rehab total" className={inputClass} style={bodyFont} />
           </div>
           {rehabMissing && (
             <p className="mt-2 flex items-center gap-1 text-base text-amber-400" style={bodyFontLight}>

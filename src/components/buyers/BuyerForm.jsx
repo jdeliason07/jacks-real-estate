@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, MapPin, Home, DollarSign, Wrench, Handshake, Check } from "lucide-react";
+import { User, MapPin, Home, DollarSign, Wrench, Handshake, Check, AlertTriangle } from "lucide-react";
 import {
   emptyBuyer,
   MONTHLY_VOLUME,
@@ -14,6 +14,7 @@ import {
 } from "../../lib/buyers.js";
 import { bodyFont, bodyFontLight, displayFont } from "../../lib/fonts.js";
 import { inputClass } from "../../lib/ui.js";
+import Field from "../Field.jsx";
 
 function Section({ icon: Icon, n, title, accent = "teal", children }) {
   const border = accent === "violet" ? "border-violet-700" : "border-teal-700";
@@ -31,12 +32,13 @@ function Section({ icon: Icon, n, title, accent = "teal", children }) {
   );
 }
 
-function Field({ label, children }) {
+// Grouped choices get a fieldset/legend so the label is announced with them.
+function Group({ label, children }) {
   return (
-    <div className="mb-4">
-      <label className="text-lg text-blue-300 block mb-1" style={bodyFontLight}>{label}</label>
+    <fieldset className="mb-4">
+      <legend className="text-lg text-blue-300 mb-1" style={bodyFontLight}>{label}</legend>
       {children}
-    </div>
+    </fieldset>
   );
 }
 
@@ -45,6 +47,7 @@ function Chip({ active, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={
         "flex items-center gap-1 px-3 py-2 rounded-lg border-2 text-lg " +
         (active ? "border-teal-500 bg-teal-950 text-teal-200" : "border-blue-800 bg-blue-950 text-blue-300 hover:border-blue-600")
@@ -57,7 +60,6 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-// Single-select group
 function ChoiceGroup({ options, value, onChange }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -68,7 +70,6 @@ function ChoiceGroup({ options, value, onChange }) {
   );
 }
 
-// Multi-select group
 function ChipGroup({ options, values, onToggle }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -81,6 +82,7 @@ function ChipGroup({ options, values, onToggle }) {
 
 export default function BuyerForm({ initial, onSave, onCancel }) {
   const [b, setB] = useState(() => ({ ...emptyBuyer(), ...(initial || {}) }));
+  const [error, setError] = useState("");
 
   const set = (patch) => setB((s) => ({ ...s, ...patch }));
   const toggle = (field, val) =>
@@ -91,13 +93,20 @@ export default function BuyerForm({ initial, onSave, onCancel }) {
 
   function submit(e) {
     e.preventDefault();
+    // A record with no name is unusable later, so require one identifier.
+    if (!b.investorName.trim() && !b.companyName.trim()) {
+      setError("Add an investor name or a company name so you can find them later.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setError("");
     onSave(b);
   }
 
   const editing = Boolean(b.id);
 
   return (
-    <form onSubmit={submit} className="max-w-2xl mx-auto px-4 py-10">
+    <form onSubmit={submit} className="max-w-2xl mx-auto px-4 py-10" noValidate>
       <div className="mb-8 text-center">
         <p className="text-teal-400 text-sm mb-2" style={displayFont}>CASH BUYER INTAKE</p>
         <h1 className="text-4xl sm:text-5xl text-teal-400 font-bold mb-2" style={{ ...displayFont, textShadow: "4px 4px 0 rgba(124,58,237,0.55)" }}>
@@ -106,114 +115,90 @@ export default function BuyerForm({ initial, onSave, onCancel }) {
         <p className="text-blue-300 text-lg" style={bodyFontLight}>Fill this out during or right after the call.</p>
       </div>
 
-      {/* 1. Investor & Entity */}
+      {error && (
+        <div role="alert" className="mb-6 flex items-start gap-2 p-4 rounded-lg border-2 border-amber-600 text-amber-300">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-1 text-amber-400" strokeWidth={2.5} />
+          <span className="text-lg" style={bodyFontLight}>{error}</span>
+        </div>
+      )}
+
       <Section icon={User} n="1" title="Investor & Entity">
-        <Field label="Investor name">
-          <input className={inputClass} style={bodyFont} value={b.investorName} onChange={(e) => set({ investorName: e.target.value })} />
-        </Field>
-        <Field label="Company / entity name">
-          <input className={inputClass} style={bodyFont} value={b.companyName} onChange={(e) => set({ companyName: e.target.value })} />
-        </Field>
+        <Field label="Investor name" value={b.investorName} onChange={(v) => set({ investorName: v })} autoComplete="name" />
+        <Field label="Company / entity name" value={b.companyName} onChange={(v) => set({ companyName: v })} autoComplete="organization" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Field label="Email">
-            <input type="email" className={inputClass} style={bodyFont} value={b.email} onChange={(e) => set({ email: e.target.value })} />
-          </Field>
-          <Field label="Phone">
-            <input type="tel" className={inputClass} style={bodyFont} value={b.phone} onChange={(e) => set({ phone: e.target.value })} />
-          </Field>
-          <Field label="FB / IG">
-            <input className={inputClass} style={bodyFont} value={b.social} onChange={(e) => set({ social: e.target.value })} />
-          </Field>
+          <Field label="Email" type="email" value={b.email} onChange={(v) => set({ email: v })} autoComplete="email" />
+          <Field label="Phone" type="tel" value={b.phone} onChange={(v) => set({ phone: v })} autoComplete="tel" />
+          <Field label="FB / IG" value={b.social} onChange={(v) => set({ social: v })} />
         </div>
-        <Field label="Target monthly volume">
+        <Group label="Target monthly volume">
           <ChoiceGroup options={MONTHLY_VOLUME} value={b.monthlyVolume} onChange={(v) => set({ monthlyVolume: v })} />
-        </Field>
+        </Group>
       </Section>
 
-      {/* 2. Target Market */}
       <Section icon={MapPin} n="2" title="Target Market" accent="violet">
-        <Field label="Target city & state">
-          <input className={inputClass} style={bodyFont} value={b.targetCityState} onChange={(e) => set({ targetCityState: e.target.value })} placeholder="e.g. Columbus, OH" />
-        </Field>
-        <Field label="Target neighborhoods / zips">
-          <input className={inputClass} style={bodyFont} value={b.neighborhoodsZips} onChange={(e) => set({ neighborhoodsZips: e.target.value })} placeholder="e.g. 43201, 43202, Clintonville" />
-        </Field>
-        <Field label="Locations / areas to avoid">
-          <input className={inputClass} style={bodyFont} value={b.areasToAvoid} onChange={(e) => set({ areasToAvoid: e.target.value })} />
-        </Field>
+        <Field label="Target city & state" value={b.targetCityState} onChange={(v) => set({ targetCityState: v })} placeholder="e.g. Columbus, OH" hint="Used to build the Zillow search." />
+        <Field label="Target neighborhoods / zips" value={b.neighborhoodsZips} onChange={(v) => set({ neighborhoodsZips: v })} placeholder="e.g. 43201, 43202, Clintonville" />
+        <Field label="Locations / areas to avoid" value={b.areasToAvoid} onChange={(v) => set({ areasToAvoid: v })} />
       </Section>
 
-      {/* 3. Property Criteria */}
       <Section icon={Home} n="3" title="Property Criteria">
-        <Field label="Asset type">
+        <Group label="Asset type">
           <ChipGroup options={ASSET_TYPES} values={b.assetTypes} onToggle={(v) => toggle("assetTypes", v)} />
-        </Field>
+        </Group>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Min beds">
-            <input type="number" className={inputClass} style={bodyFont} value={b.minBeds} onChange={(e) => set({ minBeds: e.target.value })} />
-          </Field>
-          <Field label="Min baths">
-            <input type="number" className={inputClass} style={bodyFont} value={b.minBaths} onChange={(e) => set({ minBaths: e.target.value })} />
-          </Field>
-          <Field label="Min sqft">
-            <input type="number" className={inputClass} style={bodyFont} value={b.minSqft} onChange={(e) => set({ minSqft: e.target.value })} />
-          </Field>
+          <Field label="Min beds" numeric value={b.minBeds} onChange={(v) => set({ minBeds: v })} />
+          <Field label="Min baths" numeric value={b.minBaths} onChange={(v) => set({ minBaths: v })} />
+          <Field label="Min sqft" numeric value={b.minSqft} onChange={(v) => set({ minSqft: v })} />
         </div>
-        <Field label="Strategy">
+        <Group label="Strategy">
           <ChipGroup options={STRATEGIES} values={b.strategies} onToggle={(v) => toggle("strategies", v)} />
-        </Field>
+        </Group>
       </Section>
 
-      {/* 4. Financial & Underwriting */}
       <Section icon={DollarSign} n="4" title="Financial & Underwriting" accent="violet">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Field label="Target ARV ($)">
-            <input type="number" className={inputClass} style={bodyFont} value={b.arv} onChange={(e) => set({ arv: e.target.value })} />
-          </Field>
-          <Field label="Max purchase ($)">
-            <input type="number" className={inputClass} style={bodyFont} value={b.maxPurchase} onChange={(e) => set({ maxPurchase: e.target.value })} />
-          </Field>
-          <Field label="Max rehab budget ($)">
-            <input type="number" className={inputClass} style={bodyFont} value={b.maxRehab} onChange={(e) => set({ maxRehab: e.target.value })} />
-          </Field>
+          <Field label="Target ARV ($)" numeric value={b.arv} onChange={(v) => set({ arv: v })} />
+          <Field label="Max purchase ($)" numeric value={b.maxPurchase} onChange={(v) => set({ maxPurchase: v })} />
+          <Field label="Max rehab budget ($)" numeric value={b.maxRehab} onChange={(v) => set({ maxRehab: v })} />
         </div>
-        <Field label="Target discount rule">
+        <Group label="Target discount rule">
           <ChoiceGroup options={DISCOUNT_RULES} value={b.discountRule} onChange={(v) => set({ discountRule: v })} />
-        </Field>
+        </Group>
         {b.discountRule === "Custom" && (
-          <Field label="Custom rule">
-            <input className={inputClass} style={bodyFont} value={b.discountCustom} onChange={(e) => set({ discountCustom: e.target.value })} placeholder="e.g. 65% ARV minus rehab minus $10k" />
-          </Field>
+          <Field label="Custom rule" value={b.discountCustom} onChange={(v) => set({ discountCustom: v })} placeholder="e.g. 65% ARV minus rehab minus $10k" />
         )}
-        <Field label="Finder / wholesale fee ($)">
-          <input type="number" className={inputClass} style={bodyFont} value={b.finderFee} onChange={(e) => set({ finderFee: e.target.value })} />
-        </Field>
+        <Field label="Finder / wholesale fee ($)" numeric value={b.finderFee} onChange={(v) => set({ finderFee: v })} />
       </Section>
 
-      {/* 5. Condition & Scope */}
       <Section icon={Wrench} n="5" title="Condition & Scope">
-        <Field label="Acceptable rehab scope">
+        <Group label="Acceptable rehab scope">
           <ChipGroup options={REHAB_SCOPE} values={b.rehabScope} onToggle={(v) => toggle("rehabScope", v)} />
-        </Field>
-        <Field label="Absolute deal breakers">
+        </Group>
+        <Group label="Absolute deal breakers">
           <ChipGroup options={DEAL_BREAKERS} values={b.dealBreakers} onToggle={(v) => toggle("dealBreakers", v)} />
-        </Field>
+        </Group>
       </Section>
 
-      {/* 6. Transaction & Closing */}
       <Section icon={Handshake} n="6" title="Transaction & Closing" accent="violet">
-        <Field label="Funding type">
+        <Group label="Funding type">
           <ChipGroup options={FUNDING_TYPES} values={b.fundingType} onToggle={(v) => toggle("fundingType", v)} />
-        </Field>
-        <Field label="Proof of funds status">
+        </Group>
+        <Group label="Proof of funds status">
           <ChoiceGroup options={POF_STATUS} value={b.pofStatus} onChange={(v) => set({ pofStatus: v })} />
-        </Field>
-        <Field label="Target closing timeline">
+        </Group>
+        <Group label="Target closing timeline">
           <ChoiceGroup options={CLOSING_TIMELINE} value={b.closingTimeline} onChange={(v) => set({ closingTimeline: v })} />
-        </Field>
-        <Field label="Notes">
-          <textarea className={inputClass + " min-h-24"} style={bodyFont} value={b.notes} onChange={(e) => set({ notes: e.target.value })} />
-        </Field>
+        </Group>
+        <div className="mb-4">
+          <label htmlFor="buyer-notes" className="text-lg text-blue-300 block mb-1" style={bodyFontLight}>Notes</label>
+          <textarea
+            id="buyer-notes"
+            className={inputClass + " min-h-24"}
+            style={bodyFont}
+            value={b.notes}
+            onChange={(e) => set({ notes: e.target.value })}
+          />
+        </div>
       </Section>
 
       <div className="flex gap-3">

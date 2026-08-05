@@ -1,14 +1,16 @@
-import { useState, useEffect } from "react";
-import { UserPlus, Search, Users } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { UserPlus, Search, Users, Download, Upload } from "lucide-react";
 import Background from "../components/Background.jsx";
 import SwipeUpMenu from "../components/SwipeUpMenu.jsx";
 import BuyerForm from "../components/buyers/BuyerForm.jsx";
 import BuyerCard from "../components/buyers/BuyerCard.jsx";
 import {
   getBuyers, saveBuyer, removeBuyer, addDeal, removeDeal, displayName, buildBuyBoxText,
+  markContacted, sortBuyers, SORTS, buildBackup, parseBackup, importBuyers,
 } from "../lib/buyers.js";
 import { bodyFont, bodyFontLight, displayFont } from "../lib/fonts.js";
 import { inputClass } from "../lib/ui.js";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 
 export default function BuyersPage() {
   const [buyers, setBuyers] = useState([]);
@@ -16,13 +18,21 @@ export default function BuyersPage() {
   const [editing, setEditing] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("recent");
+  const [flash, setFlash] = useState("");
+  const fileRef = useRef(null);
+
+  useDocumentTitle(mode === "form" ? (editing ? "Edit Buyer" : "New Buyer") : "Buyers");
 
   useEffect(() => {
     setBuyers(getBuyers());
   }, []);
 
-  function refresh() {
-    setBuyers(getBuyers());
+  const refresh = () => setBuyers(getBuyers());
+
+  function note(msg) {
+    setFlash(msg);
+    setTimeout(() => setFlash(""), 3000);
   }
 
   function startNew() {
@@ -49,34 +59,60 @@ export default function BuyersPage() {
     refresh();
   }
 
-  // Match against the name, company, and the whole buy box so a search for a
-  // zip or "BRRRR" finds the right people.
-  const filtered = buyers.filter((b) => {
-    const q = query.trim().toLowerCase();
-    if (!q) return true;
-    return (
+  // Download every record as JSON — the only safeguard against losing the
+  // browser's storage (cleared data, lost phone, new device).
+  function exportBackup() {
+    const blob = new Blob([buildBackup(getBuyers())], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `jacks-realty-buyers-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    note("Backup downloaded.");
+  }
+
+  async function handleImport(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-importing the same file
+    if (!file) return;
+    try {
+      const { buyers: incoming } = parseBackup(await file.text());
+      const { added, updated } = importBuyers(incoming);
+      refresh();
+      note(`Restored ${added} new, ${updated} updated.`);
+    } catch (err) {
+      note(err.message || "Could not read that file.");
+    }
+  }
+
+  // Match name, company, and the whole buy box so a zip or "BRRRR" finds people.
+  const q = query.trim().toLowerCase();
+  const filtered = sortBuyers(
+    buyers.filter((b) =>
+      !q ||
       displayName(b).toLowerCase().includes(q) ||
       (b.companyName || "").toLowerCase().includes(q) ||
       buildBuyBoxText(b).toLowerCase().includes(q)
-    );
-  });
+    ),
+    sort
+  );
 
   if (mode === "form") {
     return (
       <Background>
-        <SwipeUpMenu />
         <BuyerForm
           initial={editing}
           onSave={handleSave}
           onCancel={() => { setMode("list"); setEditing(null); }}
         />
+        <SwipeUpMenu />
       </Background>
     );
   }
 
   return (
     <Background>
-      <SwipeUpMenu />
       <div className="max-w-2xl mx-auto px-4 py-10">
         <div className="mb-8 text-center">
           <p className="text-teal-400 text-sm mb-2" style={displayFont}>CASH BUYERS LIST</p>
@@ -88,6 +124,12 @@ export default function BuyersPage() {
           </p>
         </div>
 
+        {flash && (
+          <div role="status" className="mb-4 p-3 rounded-lg border-2 border-teal-700 bg-teal-950 text-teal-200 text-lg text-center" style={bodyFontLight}>
+            {flash}
+          </div>
+        )}
+
         <button
           onClick={startNew}
           className="w-full mb-6 flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-teal-500 bg-teal-600 text-blue-950 text-2xl hover:bg-teal-500"
@@ -97,16 +139,37 @@ export default function BuyersPage() {
         </button>
 
         {buyers.length > 0 && (
-          <div className="relative mb-6">
-            <Search className="w-5 h-5 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={2.5} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, city, zip, strategy…"
-              className={inputClass + " pl-11"}
-              style={bodyFont}
-            />
-          </div>
+          <>
+            <div className="relative mb-3">
+              <Search className="w-5 h-5 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={2.5} />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search name, city, zip, strategy…"
+                aria-label="Search buyers"
+                className={inputClass + " pl-11"}
+                style={bodyFont}
+              />
+            </div>
+
+            <div className="flex gap-2 mb-6">
+              {Object.entries(SORTS).map(([key, s]) => (
+                <button
+                  key={key}
+                  onClick={() => setSort(key)}
+                  aria-pressed={sort === key}
+                  className={
+                    "px-3 py-2 rounded-lg border-2 text-base " +
+                    (sort === key ? "border-teal-500 bg-teal-950 text-teal-200" : "border-blue-800 bg-blue-950 text-blue-400 hover:border-blue-600")
+                  }
+                  style={bodyFont}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         {filtered.length === 0 && (
@@ -128,13 +191,35 @@ export default function BuyersPage() {
             onDelete={() => handleDelete(b)}
             onAddDeal={(deal) => { addDeal(b.id, deal); refresh(); }}
             onRemoveDeal={(dealId) => { removeDeal(b.id, dealId); refresh(); }}
+            onContact={() => { markContacted(b.id); refresh(); }}
           />
         ))}
 
-        <p className="text-blue-400 text-base text-center mt-6" style={bodyFontLight}>
-          Saved on this device only - nothing leaves your phone.
-        </p>
+        {/* Backup — localStorage is one cleared cache away from empty. */}
+        <div className="mt-8 pt-6 border-t border-blue-800">
+          <div className="flex gap-2">
+            <button
+              onClick={exportBackup}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-blue-700 bg-blue-950 text-blue-300 text-lg hover:bg-blue-800"
+              style={bodyFont}
+            >
+              <Download className="w-5 h-5" strokeWidth={2.5} /> Back up
+            </button>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-blue-700 bg-blue-950 text-blue-300 text-lg hover:bg-blue-800"
+              style={bodyFont}
+            >
+              <Upload className="w-5 h-5" strokeWidth={2.5} /> Restore
+            </button>
+            <input ref={fileRef} type="file" accept="application/json,.json" onChange={handleImport} className="hidden" />
+          </div>
+          <p className="text-blue-500 text-base text-center mt-3" style={bodyFontLight}>
+            Saved on this device only. Back up regularly - clearing your browser data erases these records.
+          </p>
+        </div>
       </div>
+      <SwipeUpMenu />
     </Background>
   );
 }

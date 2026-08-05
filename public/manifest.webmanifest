@@ -1,9 +1,13 @@
 {
+  "id": "/",
   "name": "Jack's Realty",
   "short_name": "Jack's Realty",
   "description": "Real estate investing, run by the numbers.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["business", "finance", "productivity"],
   "background_color": "#020617",
   "theme_color": "#020617",
   "icons": [

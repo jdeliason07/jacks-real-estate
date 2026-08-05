@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Calculator, Users, Home } from "lucide-react";
 import { displayFont } from "../lib/fonts.js";
@@ -29,6 +29,7 @@ function atPageBottom() {
 export default function SwipeUpMenu() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const firstLinkRef = useRef(null);
 
   const links = pathname === "/" ? LINKS.filter((l) => l.to !== "/") : LINKS;
 
@@ -76,11 +77,13 @@ export default function SwipeUpMenu() {
     };
   }, [open]);
 
-  // Don't let the page scroll behind the open sheet.
+  // Don't let the page scroll behind the open sheet, and move focus into it so
+  // keyboard and screen-reader users land on the menu they just opened.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    firstLinkRef.current?.focus();
     return () => {
       document.body.style.overflow = prev;
     };
@@ -104,6 +107,8 @@ export default function SwipeUpMenu() {
 
       {/* Sheet */}
       <nav
+        aria-label="Site menu"
+        aria-hidden={!open}
         className={
           "fixed left-0 right-0 bottom-0 z-30 rounded-t-3xl border-t-2 border-x-2 border-teal-700 bg-blue-900 transition-transform duration-300 ease-out " +
           (open ? "translate-y-0" : "translate-y-full")
@@ -120,10 +125,12 @@ export default function SwipeUpMenu() {
         </button>
 
         <div className="max-w-md mx-auto px-5 pt-2">
-          {links.map(({ label, to, icon: Icon }) => (
+          {links.map(({ label, to, icon: Icon }, i) => (
             <Link
               key={to}
               to={to}
+              ref={i === 0 ? firstLinkRef : undefined}
+              tabIndex={open ? 0 : -1}
               className="flex items-center gap-3 px-5 py-4 mb-3 rounded-xl border-2 border-teal-600 bg-blue-950 text-teal-300 text-2xl hover:bg-blue-800 transition-colors"
               style={displayFont}
             >

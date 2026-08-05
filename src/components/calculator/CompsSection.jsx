@@ -1,7 +1,7 @@
 import { Home, Plus, Minus, AlertTriangle } from "lucide-react";
 import { fmt } from "../../lib/deal.js";
 import { bodyFont, bodyFontLight, displayFont } from "../../lib/fonts.js";
-import { inputClass } from "../../lib/ui.js";
+import { inputClass, numericProps } from "../../lib/ui.js";
 
 export default function CompsSection({ state, deal, set, updateComp, addComp, removeComp }) {
   const { comps, arvOverride, arvManual } = state;
@@ -22,7 +22,7 @@ export default function CompsSection({ state, deal, set, updateComp, addComp, re
           <div key={c.id} className="flex items-center gap-2">
             <span className="text-blue-400 text-xl w-5" style={bodyFont}>{i + 1}</span>
             <span className="text-blue-400 text-xl">$</span>
-            <input
+            <input {...numericProps}
               type="number"
               value={c.price}
               onChange={(e) => updateComp(c.id, e.target.value)}
@@ -62,7 +62,7 @@ export default function CompsSection({ state, deal, set, updateComp, addComp, re
         <>
           <div className="mt-2 flex items-center gap-2">
             <span className="text-blue-400 text-xl">$</span>
-            <input type="number" value={arvManual} onChange={(e) => set({ arvManual: e.target.value })} placeholder="Manual ARV" className={inputClass} style={bodyFont} />
+            <input type="number" {...numericProps} value={arvManual} onChange={(e) => set({ arvManual: e.target.value })} placeholder="Manual ARV" className={inputClass} style={bodyFont} />
           </div>
           {arvMissing && (
             <p className="mt-2 flex items-center gap-1 text-base text-amber-400" style={bodyFontLight}>
