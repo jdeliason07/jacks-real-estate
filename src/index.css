@@ -156,9 +156,25 @@ body,
   }
 }
 
+/* Bobbing chevron that hints at the swipe-up gesture on the landing page. */
+.swipe-hint {
+  animation: swipe-bob 1.8s ease-in-out infinite;
+}
+
+@keyframes swipe-bob {
+  0%,
+  100% {
+    transform: translateY(3px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 /* Users who prefer reduced motion get a steady glow, no flicker. */
 @media (prefers-reduced-motion: reduce) {
-  .electric {
+  .electric,
+  .swipe-hint {
     animation: none;
   }
 }
