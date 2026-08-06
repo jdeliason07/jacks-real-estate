@@ -6,8 +6,10 @@ import BuyerForm from "../components/buyers/BuyerForm.jsx";
 import BuyerCard from "../components/buyers/BuyerCard.jsx";
 import {
   getBuyers, saveBuyer, removeBuyer, addDeal, removeDeal, displayName, buildBuyBoxText,
-  markContacted, sortBuyers, SORTS, buildBackup, parseBackup, importBuyers,
+  markContacted, sortBuyers, SORTS,
 } from "../lib/buyers.js";
+import { exportBackupText, parseBackup, restoreBackup, describeRestore } from "../lib/backup.js";
+import { detachAllForBuyer } from "../lib/repo.js";
 import { bodyFont, bodyFontLight, displayFont } from "../lib/fonts.js";
 import { inputClass } from "../lib/ui.js";
 import useDocumentTitle from "../lib/useDocumentTitle.js";
@@ -53,20 +55,23 @@ export default function BuyersPage() {
     setExpandedId(saved.id);
   }
 
-  function handleDelete(buyer) {
+  async function handleDelete(buyer) {
     if (!window.confirm(`Delete ${displayName(buyer)}? This can't be undone.`)) return;
     removeBuyer(buyer.id);
+    // Don't leave this buyer attached to deals they no longer exist for.
+    await detachAllForBuyer(buyer.id);
     refresh();
   }
 
   // Download every record as JSON — the only safeguard against losing the
-  // browser's storage (cleared data, lost phone, new device).
-  function exportBackup() {
-    const blob = new Blob([buildBackup(getBuyers())], { type: "application/json" });
+  // browser's storage (cleared data, lost phone, new device). Covers deals and
+  // their buyer attachments as well as the buyers themselves.
+  async function exportBackup() {
+    const blob = new Blob([await exportBackupText()], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `jacks-realty-buyers-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `jacks-realty-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     note("Backup downloaded.");
@@ -77,10 +82,9 @@ export default function BuyersPage() {
     e.target.value = ""; // allow re-importing the same file
     if (!file) return;
     try {
-      const { buyers: incoming } = parseBackup(await file.text());
-      const { added, updated } = importBuyers(incoming);
+      const result = await restoreBackup(parseBackup(await file.text()));
       refresh();
-      note(`Restored ${added} new, ${updated} updated.`);
+      note(describeRestore(result));
     } catch (err) {
       note(err.message || "Could not read that file.");
     }
@@ -215,7 +219,8 @@ export default function BuyersPage() {
             <input ref={fileRef} type="file" accept="application/json,.json" onChange={handleImport} className="hidden" />
           </div>
           <p className="text-blue-500 text-base text-center mt-3" style={bodyFontLight}>
-            Saved on this device only. Back up regularly - clearing your browser data erases these records.
+            Saved on this device only. Back up regularly - clearing your browser data erases these
+            records. The backup covers your deals too.
           </p>
         </div>
       </div>

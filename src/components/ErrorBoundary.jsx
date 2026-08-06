@@ -14,15 +14,33 @@ export default class ErrorBoundary extends Component {
     return { error };
   }
 
+  // Storage keys are hardcoded rather than imported, for the same reason the
+  // gradient below is: this screen has to work when a module fails to load.
+  // Shape matches backup.js so the file restores through the normal Restore.
   downloadRaw = () => {
     try {
-      const blob = new Blob([window.localStorage.getItem("jacks-realty-buyers-v1") || "[]"], {
-        type: "application/json",
-      });
+      const read = (key, fallback) => {
+        try {
+          const raw = window.localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      };
+      const dump = {
+        app: "jacks-realty",
+        type: "jacks-realty-backup",
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        buyers: read("jacks-realty-buyers-v1", []),
+        deals: read("jacks-realty-deals-v1", []),
+        dealBuyers: read("jacks-realty-deal-buyers-v1", []),
+      };
+      const blob = new Blob([JSON.stringify(dump, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "jacks-realty-buyers-raw.json";
+      a.download = "jacks-realty-raw-backup.json";
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -51,7 +69,7 @@ export default class ErrorBoundary extends Component {
             Something broke
           </h1>
           <p style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "#bfdbfe" }}>
-            Your saved buyers are still on this device. Download a backup before reloading, just in case.
+            Your saved buyers and deals are still on this device. Download a backup before reloading, just in case.
           </p>
           <pre
             style={{

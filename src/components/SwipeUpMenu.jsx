@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Calculator, Users, Home } from "lucide-react";
+import { Calculator, Users, Home, ClipboardList } from "lucide-react";
 import { displayFont } from "../lib/fonts.js";
 
 // Destinations. "Home" is dropped on the landing page itself.
 const LINKS = [
   { label: "Home", to: "/", icon: Home },
+  { label: "Deals", to: "/deals", icon: ClipboardList },
   { label: "Deal Calculator", to: "/calculator", icon: Calculator },
   { label: "Buyers", to: "/buyers", icon: Users },
 ];

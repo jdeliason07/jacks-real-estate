@@ -211,3 +211,55 @@ body,
     opacity: 0;
   }
 }
+
+/* ---- Printed documents ---------------------------------------------------
+   The Notice of Termination is the one screen that leaves the deep sea. It
+   renders as a sheet of paper on screen too, so what you print is what you
+   were looking at. */
+
+.print-sheet {
+  /* Break out of the app's handwriting face — this one gets read by an agent
+     and possibly a lawyer. The shell sets Kalam 700 inline, so the weight has
+     to be reset too or the whole notice prints bold. */
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.5);
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    background: #fff !important;
+  }
+
+  /* Everything the app draws around the document is screen furniture: the
+     controls, the drifting wave, and every fixed-position layer (the sonar
+     rings and the swipe-up menu). */
+  .no-print,
+  .wave-sweep,
+  .fixed {
+    display: none !important;
+  }
+
+  /* The page shell paints its gradient inline, which outranks a plain rule. */
+  .app-shell {
+    background: #fff !important;
+  }
+
+  .print-page {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  @page {
+    margin: 0.75in;
+  }
+}

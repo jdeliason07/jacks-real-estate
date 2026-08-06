@@ -1,24 +1,42 @@
 # Jack's Realty
 
 Real estate investing, run by the numbers. A mobile-first tool for wholesaling:
-underwrite a deal, keep a cash-buyer list, and get from a buy box to a Zillow
-search in one tap.
+track a pipeline from first lead to close, underwrite a deal, keep a cash-buyer
+list, and get from a buy box to a Zillow search in one tap.
 
 Everything runs in the browser — no backend, no accounts, and no deal or buyer
 data ever leaves the device.
 
 ## Pages / routes
 
-| Route         | Page                                                          |
-| ------------- | ------------------------------------------------------------- |
-| `/`           | Landing page — wordmark only; swipe up for the menu            |
-| `/calculator` | Deal Calculator — ARV → rehab → 70% rule → target price        |
-| `/buyers`     | Buyers CRM — intake form, contact, buy boxes, deal history     |
+| Route                     | Page                                                       |
+| ------------------------- | ---------------------------------------------------------- |
+| `/`                       | Landing page — wordmark only; swipe up for the menu         |
+| `/deals`                  | Deal dashboard — Prospective and Live tabs                  |
+| `/deals/:id`              | One deal — underwriting, contract terms, buyers             |
+| `/deals/:id/termination`  | Notice of Termination, print-ready                          |
+| `/calculator`             | Deal Calculator — ARV → rehab → 70% rule → target price      |
+| `/buyers`                 | Buyers CRM — intake form, contact, buy boxes, deal history   |
 
 Navigation is a swipe-up sheet on every page. It only opens when the swipe
 *starts* at the bottom of the page, so it never interferes with scrolling.
 
 ## Features
+
+**Deals**
+- Two tabs: **Prospective** (being sourced and underwritten) and **Live** (signed
+  purchase agreement). A deal moves between them without losing its numbers.
+- Each prospective deal opens the full Deal Calculator, pre-filled with its own
+  comps, rehab and rule %. Edits save back to the deal a moment after you stop
+  typing — the `/calculator` scratchpad stays separate and untouched.
+- **DD countdown** on every live deal, computed from the stored inspection-period
+  end date each time you look at it. Teal while there's runway, violet as it
+  tightens, amber for **Due today** and **Past deadline — N days overdue**.
+- Live tab sorts by deadline, soonest first.
+- **Buyers on a deal** — many-to-many: a buyer can sit on several live deals at
+  once, and a deal can carry a shortlist, each marked interested / assigned / passed.
+- **Notice of Termination** — one tap, filled from the deal (address, seller,
+  entity, buyers, PA date, DD date), then Print / Save as PDF.
 
 **Deal Calculator**
 - Comps → ARV (or manual override), rehab by tier or $/sqft, configurable rule %
@@ -41,15 +59,24 @@ Navigation is a swipe-up sheet on every page. It only opens when the swipe
 
 ## Data & backup
 
-Records live in the browser's `localStorage` on one device. That keeps
-everything private and offline, but it means:
+Records live in the browser's `localStorage` on one device, under four keys:
+`jacks-realty-buyers-v1`, `jacks-realty-deals-v1`,
+`jacks-realty-deal-buyers-v1` (which buyer is on which deal), and
+`jacks-realty-deal-v1` (the `/calculator` scratchpad). That keeps everything
+private and offline, but it means:
 
 - Clearing browser data erases the records.
 - Nothing syncs between your phone and laptop.
 
-Use **Back up** on the Buyers page regularly. **Restore** merges a backup file
-back in (matching ids are replaced, new ones appended). Stored records are
-normalized on read, so a partial or hand-edited file can't break the app.
+Use **Back up** on the Buyers page regularly — it covers buyers, deals and
+their buyer attachments in one file. **Restore** merges a backup back in
+(matching ids are replaced, new ones appended) and still accepts older
+buyers-only backups. Stored records are normalized on read, so a partial or
+hand-edited file can't break the app.
+
+Every read and write goes through `src/lib/repo.js`, whose functions are all
+async even though `localStorage` isn't. That's the seam: moving to a real
+backend later means rewriting that one file, not every screen.
 
 ## Install on a phone
 
@@ -60,15 +87,27 @@ caches the app so it opens without a connection.
 ## Project layout
 
 ```
+DESIGN.md                     the Deep Sea Field Kit — colours, type, motifs
 src/
   App.jsx                     routes, wrapped in an ErrorBoundary
   main.jsx                    entry point, fonts, service-worker registration
-  index.css                   Tailwind + neon wordmark and background-wave animations
+  index.css                   Tailwind + neon wordmark, wave animation, print rules
   lib/
     deal.js / deal.test.js    pure deal math (computeDeal) — unit tested
-    buyers.js                 buyer records, buy box, Zillow, matching, backup
+    dealsSchema.js            deal records, calculator bridge, stage helpers
+    repo.js                   all deal reads/writes (async — the backend seam)
+    countdown.js              DD-deadline day math and labels
+    useCountdown.js           live countdown (interval + tab-visibility)
+    useDebouncedSave.js       save after typing stops; flush on unmount/pagehide
+    backup.js                 back up / restore buyers, deals and their links
+    settings.js               your entity name, for the termination notice
+    buyers.js                 buyer records, buy box, Zillow, matching
     buyers.test.js            contact links + buy-box summary
-    buyers.normalize.test.js  normalization, sorting, matching, backup round-trip
+    buyers.normalize.test.js  normalization, sorting, matching
+    deals.test.js             deal schema, storage, the deal↔buyer junction
+    countdown.test.js         today / overdue / month + DST boundaries
+    backup.test.js            round-trips, merges, and v1 files
+    tokens.js                 design tokens (see DESIGN.md)
     fonts.js, ui.js           shared style objects
     useDocumentTitle.js       per-route titles
   components/
@@ -78,8 +117,14 @@ src/
     Field.jsx                 labelled input (mobile keypad, wheel guard)
     calculator/               Comps, Rehab, Terms, Ledger, MatchingBuyers
     buyers/                   BuyerForm, BuyerCard
-  pages/                      Landing, CalculatorPage, BuyersPage
+    deals/                    DealCard, LiveDealCard, CountdownBanner,
+                              BuyerAttachList, PromoteToLiveForm, StatusChip
+  pages/                      Landing, CalculatorPage, BuyersPage,
+                              DealsPage, DealDetailPage, TerminationNoticePage
 ```
+
+Styling follows `DESIGN.md` — two accents (teal, violet) plus amber reserved for
+states that need a decision now.
 
 ## Tech stack
 
@@ -88,7 +133,7 @@ src/
 - Tailwind CSS 3
 - lucide-react icons
 - Fonts self-hosted via @fontsource (Latin subset) — no external requests
-- Vitest (43 tests)
+- Vitest (89 tests)
 
 ## Develop
 

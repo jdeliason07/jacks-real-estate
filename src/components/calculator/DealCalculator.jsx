@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { computeDeal, REHAB_TIERS } from "../../lib/deal.js";
 import { bodyFontLight, displayFont } from "../../lib/fonts.js";
 import CompsSection from "./CompsSection.jsx";
@@ -6,7 +6,6 @@ import RehabSection from "./RehabSection.jsx";
 import TermsSection from "./TermsSection.jsx";
 import LedgerSection from "./LedgerSection.jsx";
 import MatchingBuyers from "./MatchingBuyers.jsx";
-import useDocumentTitle from "../../lib/useDocumentTitle.js";
 
 const STORAGE_KEY = "jacks-realty-deal-v1";
 
@@ -41,35 +40,61 @@ function loadInitialState() {
   }
 }
 
-export default function DealCalculator() {
-  const [state, setState] = useState(loadInitialState);
-  useDocumentTitle("Deal Calculator");
+/**
+ * The underwriting worksheet. Works two ways:
+ *
+ *   <DealCalculator />                          the scratchpad at /calculator —
+ *                                               owns its state, persists to its
+ *                                               own localStorage key
+ *
+ *   <DealCalculator state={s} onChange={fn} />  controlled, for a pipeline deal:
+ *                                               the parent owns the numbers and
+ *                                               saves them onto the deal record
+ *
+ * The scratchpad and a pipeline deal are separate stores on purpose — opening a
+ * deal from the dashboard must not overwrite whatever is on the scratchpad.
+ */
+export default function DealCalculator({ state: controlledState, onChange, showHeader = true }) {
+  const controlled = controlledState != null && typeof onChange === "function";
 
-  // Persist every change so a field deal survives a refresh.
+  const [ownState, setOwnState] = useState(() => (controlled ? DEFAULT_STATE : loadInitialState()));
+  const state = controlled ? controlledState : ownState;
+
+  // Persist every change so a field deal survives a refresh. When controlled,
+  // the parent decides where (and how often) the numbers get written.
   useEffect(() => {
+    if (controlled) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ownState));
     } catch {
       // storage full or unavailable — non-fatal
     }
-  }, [state]);
-
-  // Keep the comp id counter ahead of any restored ids.
-  const idCounter = useRef(Math.max(0, ...state.comps.map((c) => c.id)) + 1);
+  }, [ownState, controlled]);
 
   const deal = computeDeal(state);
 
+  function apply(updater) {
+    if (controlled) onChange(typeof updater === "function" ? updater(state) : updater);
+    else setOwnState(updater);
+  }
+
   function set(patch) {
-    setState((s) => ({ ...s, ...patch }));
+    apply((s) => ({ ...s, ...patch }));
   }
   function updateComp(id, price) {
-    setState((s) => ({ ...s, comps: s.comps.map((c) => (c.id === id ? { ...c, price } : c)) }));
+    apply((s) => ({ ...s, comps: s.comps.map((c) => (c.id === id ? { ...c, price } : c)) }));
   }
   function addComp() {
-    setState((s) => (s.comps.length >= 6 ? s : { ...s, comps: [...s.comps, { id: idCounter.current++, price: "" }] }));
+    apply((s) => {
+      if (s.comps.length >= 6) return s;
+      // Derive the next id from the comps themselves — a ref couldn't stay in
+      // step with comps supplied from outside.
+      const nextId = s.comps.reduce((max, c) => Math.max(max, c.id || 0), 0) + 1;
+      return { ...s, comps: [...s.comps, { id: nextId, price: "" }] };
+    });
   }
   function removeComp(id) {
-    setState((s) => (s.comps.length <= 1 ? s : { ...s, comps: s.comps.filter((c) => c.id !== id) }));
+    apply((s) => (s.comps.length <= 1 ? s : { ...s, comps: s.comps.filter((c) => c.id !== id) }));
   }
   function selectTier(key) {
     const t = REHAB_TIERS[key];
@@ -77,14 +102,16 @@ export default function DealCalculator() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <div className="mb-8 text-center">
-        <p className="text-teal-400 text-sm mb-2" style={displayFont}>FIELD UNDERWRITING WORKSHEET</p>
-        <h1 className="text-4xl sm:text-5xl text-teal-400 font-bold mb-2" style={{ ...displayFont, textShadow: "4px 4px 0 rgba(124,58,237,0.55)" }}>
-          Deal Calculator
-        </h1>
-        <p className="text-blue-300 text-lg" style={bodyFontLight}>ARV -&gt; Rehab -&gt; 70% Rule -&gt; Target Price</p>
-      </div>
+    <div className={showHeader ? "max-w-2xl mx-auto px-4 py-10" : ""}>
+      {showHeader && (
+        <div className="mb-8 text-center">
+          <p className="text-teal-400 text-sm mb-2" style={displayFont}>FIELD UNDERWRITING WORKSHEET</p>
+          <h1 className="text-4xl sm:text-5xl text-teal-400 font-bold mb-2" style={{ ...displayFont, textShadow: "4px 4px 0 rgba(124,58,237,0.55)" }}>
+            Deal Calculator
+          </h1>
+          <p className="text-blue-300 text-lg" style={bodyFontLight}>ARV -&gt; Rehab -&gt; 70% Rule -&gt; Target Price</p>
+        </div>
+      )}
 
       <CompsSection state={state} deal={deal} set={set} updateComp={updateComp} addComp={addComp} removeComp={removeComp} />
       <RehabSection state={state} deal={deal} set={set} selectTier={selectTier} />

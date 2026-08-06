@@ -368,33 +368,10 @@ export function sortedDeals(b) {
   });
 }
 
-// ---- Backup ---------------------------------------------------------------
-
-export const BACKUP_VERSION = 1;
-
-export function buildBackup(list = getBuyers()) {
-  return JSON.stringify(
-    { app: "jacks-realty", type: "buyers-backup", version: BACKUP_VERSION, exportedAt: new Date().toISOString(), buyers: list },
-    null,
-    2
-  );
-}
-
-/**
- * Parse a backup file. Accepts either the wrapped export format or a bare
- * array of buyers. Returns {buyers} or throws with a readable message.
- */
-export function parseBackup(text) {
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error("That file isn't valid JSON.");
-  }
-  const list = Array.isArray(data) ? data : data && data.buyers;
-  if (!Array.isArray(list)) throw new Error("No buyers found in that file.");
-  return { buyers: list.map(normalizeBuyer) };
-}
+// ---- Import ---------------------------------------------------------------
+// Building and parsing backup files lives in backup.js — a backup spans deals
+// too, and this module can't import repo.js without a cycle. Writing buyers
+// back stays here, next to the rest of the buyer storage.
 
 /**
  * Merge imported buyers into storage. Records with a matching id replace the

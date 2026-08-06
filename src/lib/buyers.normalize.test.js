@@ -9,8 +9,6 @@ import {
   relativeDays,
   daysSince,
   sortedDeals,
-  buildBackup,
-  parseBackup,
   emptyBuyer,
 } from "./buyers.js";
 
@@ -143,22 +141,5 @@ describe("relative dates", () => {
   });
 });
 
-describe("backup round trip", () => {
-  it("exports and re-parses the same buyers", () => {
-    const list = [{ ...emptyBuyer(), id: "a", investorName: "Dana" }];
-    const { buyers } = parseBackup(buildBackup(list));
-    expect(buyers).toHaveLength(1);
-    expect(buyers[0].investorName).toBe("Dana");
-  });
-
-  it("accepts a bare array too", () => {
-    const { buyers } = parseBackup(JSON.stringify([{ investorName: "Solo" }]));
-    expect(buyers[0].investorName).toBe("Solo");
-    expect(buyers[0].deals).toEqual([]);
-  });
-
-  it("rejects junk with a readable message", () => {
-    expect(() => parseBackup("not json")).toThrow(/valid JSON/);
-    expect(() => parseBackup('{"nope":1}')).toThrow(/No buyers/);
-  });
-});
+// Backup round-trip coverage moved to backup.test.js when backups grew to
+// cover deals as well as buyers.
